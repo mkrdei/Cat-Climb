@@ -99,9 +99,5 @@ public class PlayerControl : MonoBehaviour
             Destroy(collision.gameObject);
             
         }
-        if (Input.GetButtonDown("Interact") && collision.tag == "Interactable")
-        {
-            collision.gameObject.GetComponent<InteractableAnimation>().InteractionAnimation();
-        }
     }
 }
