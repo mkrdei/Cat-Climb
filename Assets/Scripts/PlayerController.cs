@@ -2,37 +2,48 @@
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
-public class PlayerControl : MonoBehaviour
+public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb;
     LineRenderer lr;
+
     private float _dragPower = 100f;
     private float _dragMultiplier = 5f;
     private float _maxDragMagnitude = 0.6f;
+
+    [SerializeField]
+    private float risingAfterDeathSpeed = 2f;
+
     private bool _dragging;
     public TextMeshProUGUI scoreText;
     private float score;
     private Vector2 _firstDrag, _finalDragPoint, _dragVector, _arrowFinalPoint;
-
+    private CharacterStats characterStats;
+    private CircleCollider2D circleCollider2D;
+    private Animator animator;
+    private bool died;
+    
     // Start is called before the first frame update
     void Start()
     {
+        animator = GetComponent<Animator>();
         lr = GetComponent<LineRenderer>();
         rb = GetComponent<Rigidbody2D>();
-
-        
+        circleCollider2D = GetComponent<CircleCollider2D>();
+        characterStats = GetComponent<CharacterStats>();
     }
 
     // Update is called once per frame
     void Update()
     {
         Facing();
-
-        
-        
-
-        
+        if (characterStats.Health <= 0)
+        {
+            characterStats.Alive = false;
+            Die();
+        }
     }
 
     private void LateUpdate()
@@ -49,21 +60,14 @@ public class PlayerControl : MonoBehaviour
             lr.positionCount = 0;
         }   
     }
-    private void OnMouseDrag()
+    
+    private void Die()
     {
-        _dragging = true;
-        _finalDragPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Debug.DrawLine(transform.position, _finalDragPoint, Color.red);
-        _dragVector = -(_finalDragPoint - (Vector2)transform.position)* _dragMultiplier;
-        _dragVector = Vector3.ClampMagnitude(_dragVector, _maxDragMagnitude);
-        
-        
-    }
-    private void OnMouseUp()
-    {
-        _dragging = false;
-        _finalDragPoint = Vector2.zero;
-        rb.AddForce(_dragVector*_dragPower);
+        circleCollider2D.enabled = false;
+        rb.isKinematic = true;
+        rb.velocity = Vector3.zero;
+        transform.position += Vector3.up * risingAfterDeathSpeed * Time.deltaTime;
+        animator.SetBool("died", true);
     }
     private void Facing()
     {
@@ -89,6 +93,27 @@ public class PlayerControl : MonoBehaviour
         
         
     }
+    private void OnMouseDrag()
+    {
+        if (isGrounded())
+        {
+            _dragging = true;
+            _finalDragPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Debug.DrawLine(transform.position, _finalDragPoint, Color.red);
+            _dragVector = -(_finalDragPoint - (Vector2)transform.position) * _dragMultiplier;
+            _dragVector = Vector3.ClampMagnitude(_dragVector, _maxDragMagnitude);
+        }
+    }
+    private void OnMouseUp()
+    {
+        if (isGrounded())
+        {
+            _dragging = false;
+            _finalDragPoint = Vector2.zero;
+            rb.AddForce(_dragVector * _dragPower);
+        }
+    }
+    
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if (collision.transform.tag == "Consumable")
@@ -99,5 +124,19 @@ public class PlayerControl : MonoBehaviour
             Destroy(collision.gameObject);
             
         }
+    }
+
+    private bool isGrounded()
+    {
+        bool isGrounded = false;
+        float extraHeight = 0.1f;
+        RaycastHit2D[] raycastHits = Physics2D.BoxCastAll(circleCollider2D.bounds.center, circleCollider2D.bounds.size, 0f, Vector2.down, extraHeight);
+        foreach(RaycastHit2D raycastHit in raycastHits)
+        {
+            isGrounded = raycastHit.collider.name != transform.name && raycastHit.collider != null;
+            Debug.Log("Player Grounded: " + isGrounded);
+        }
+        
+        return isGrounded;
     }
 }

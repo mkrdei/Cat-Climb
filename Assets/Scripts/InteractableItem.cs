@@ -1,16 +1,21 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class InteractableItem : MonoBehaviour
 {
     [SerializeField] GameObject[] objectsToAnimate;
     [SerializeField] private Animator[] _anims;
-    private bool _interactable, _active;
+    private bool _interactable, _active, _focused;
+    private GameObject _interactableBorderSprite, _interactableBorder;
+    public Camera cam;
     
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
+        _interactableBorderSprite = Resources.Load<GameObject>("UI/interactableBorderUI");
+
         _interactable = true;
         _active = true;
 
@@ -26,11 +31,15 @@ public class InteractableItem : MonoBehaviour
     {
         
     }
-    
 
     public void InteractionAnimation()
     {
-        foreach(Animator _anim in _anims)
+        foreach (GameObject objectToAnimate in objectsToAnimate)
+        {
+            if(objectToAnimate.GetComponent<BoxCollider2D>()!=null)
+                objectToAnimate.GetComponent<BoxCollider2D>().enabled = !_active;
+        }
+        foreach (Animator _anim in _anims)
         {
             _anim.SetBool("active", _active);
         }
@@ -53,6 +62,21 @@ public class InteractableItem : MonoBehaviour
         _interactable = true;
     }
 
+    private void OnMouseOver()
+    {
+        if (!_focused)
+        {
+            _interactableBorder = Instantiate(_interactableBorderSprite, transform);
+            _interactableBorder.transform.position = transform.position;
+            _focused = true;
+        }
+            
+    }
+    private void OnMouseExit()
+    {
+        Destroy(_interactableBorder);
+        _focused = false;
+    }
 
 
 }
