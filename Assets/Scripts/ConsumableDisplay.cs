@@ -13,8 +13,6 @@ public class ConsumableDisplay : MonoBehaviour
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _spriteRenderer.sprite = consumable.sprite;
-
-        
     }
     private void Start()
     {
@@ -29,7 +27,6 @@ public class ConsumableDisplay : MonoBehaviour
 
     }
 
-    // Update is called once per frame
     void FixedUpdate()
     {
         transform.Rotate(Vector3.up * consumable.rotationSpeed);

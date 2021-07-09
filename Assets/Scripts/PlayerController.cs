@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -16,14 +17,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private float risingAfterDeathSpeed = 2f;
 
-    private bool _dragging;
-    public TextMeshProUGUI scoreText;
+    public Text scoreText;
     private float score;
     private Vector2 _firstDrag, _finalDragPoint, _dragVector, _arrowFinalPoint;
-    private CharacterStats characterStats;
+    private PlayerStats playerStats;
     private CircleCollider2D circleCollider2D;
     private Animator animator;
-    private bool died;
+    private bool died, grounded, _dragging;
     
     // Start is called before the first frame update
     void Start()
@@ -32,22 +32,31 @@ public class PlayerController : MonoBehaviour
         lr = GetComponent<LineRenderer>();
         rb = GetComponent<Rigidbody2D>();
         circleCollider2D = GetComponent<CircleCollider2D>();
-        characterStats = GetComponent<CharacterStats>();
+        playerStats = GetComponent<PlayerStats>();
+        
     }
 
     // Update is called once per frame
     void Update()
     {
-        Facing();
-        if (characterStats.Health <= 0)
-        {
-            characterStats.Alive = false;
-            Die();
-        }
+        // Debugging
+        Debug.Log("Player is grounded: " + grounded);
+        isGrounded();
     }
 
     private void LateUpdate()
     {
+        Facing();
+
+        // Health Control
+        if (playerStats.Health <= 0)
+        {
+            playerStats.Alive = false;
+            Die();
+        }
+
+
+        // Dragging and LineRenderer calculations and settings.
         if (_dragging)
         {
             _arrowFinalPoint = _dragVector  + (Vector2)transform.position;
@@ -95,7 +104,7 @@ public class PlayerController : MonoBehaviour
     }
     private void OnMouseDrag()
     {
-        if (isGrounded())
+        if (grounded)
         {
             _dragging = true;
             _finalDragPoint = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -106,7 +115,7 @@ public class PlayerController : MonoBehaviour
     }
     private void OnMouseUp()
     {
-        if (isGrounded())
+        if (grounded)
         {
             _dragging = false;
             _finalDragPoint = Vector2.zero;
@@ -118,25 +127,37 @@ public class PlayerController : MonoBehaviour
     {
         if (collision.transform.tag == "Consumable")
         {
+            // This code will change due to security problems.
+            playerStats.Score += collision.gameObject.GetComponent<ConsumableDisplay>().scorePoint;
             
-            score += collision.gameObject.GetComponent<ConsumableDisplay>().scorePoint;
-            scoreText.text = "SCORE: " + score;
             Destroy(collision.gameObject);
-            
+        }
+        if (collision.transform.name == "Hamster")
+        {
+            animator.SetBool("love", true);
+            UIController uIController = GameObject.Find("UIControllerObject").GetComponent<UIController>();
+            uIController.ShowLevelPassedCanvas();
+            Debug.Log("Level Passed.");
         }
     }
 
-    private bool isGrounded()
+    private void isGrounded()
     {
-        bool isGrounded = false;
-        float extraHeight = 0.1f;
+        float extraHeight = 0.01f;
         RaycastHit2D[] raycastHits = Physics2D.BoxCastAll(circleCollider2D.bounds.center, circleCollider2D.bounds.size, 0f, Vector2.down, extraHeight);
         foreach(RaycastHit2D raycastHit in raycastHits)
         {
-            isGrounded = raycastHit.collider.name != transform.name && raycastHit.collider != null;
-            Debug.Log("Player Grounded: " + isGrounded);
+            if(raycastHit.collider.name != transform.name)
+            {
+                grounded = true;
+                break;
+            }
+            else
+            {
+                grounded = false;
+            }
+            
         }
         
-        return isGrounded;
     }
 }

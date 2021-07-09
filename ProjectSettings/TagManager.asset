@@ -7,6 +7,8 @@ TagManager:
   - Consumable
   - Interactable
   - Enemy
+  - MainCanvas
+  - LevelPassedScreen
   layers:
   - Default
   - TransparentFX
